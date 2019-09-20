@@ -4,6 +4,7 @@
   "description": "Decrypt encrypted ssh private keys",
   "main": "index.js",
   "scripts": {
+    "lint": "eslint .",
     "test": "tap test.js"
   },
   "repository": {
@@ -32,6 +33,9 @@
     "url": "https://github.com/isaacs/ssh-key-decrypt/issues"
   },
   "devDependencies": {
+    "eslint": "^6.4.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-plugin-import": "^2.18.2",
     "tap": "^1.2.0"
   }
 }
