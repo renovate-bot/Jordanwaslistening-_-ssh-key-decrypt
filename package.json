@@ -1,5 +1,5 @@
 {
-  "name": "ssh-key-decrypt",
+  "name": "@ianhattendorf/ssh-key-decrypt",
   "version": "0.1.2",
   "description": "Decrypt encrypted ssh private keys",
   "main": "index.js",
@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/isaacs/ssh-key-decrypt"
+    "url": "git://github.com/ianhattendorf/ssh-key-decrypt"
   },
   "keywords": [
     "ssh",
