@@ -51,6 +51,7 @@ extremely wrong, it throws if anything unexpected is encountered.
 * aes128, aka AES-128-CBC
 * aes192, aka AES-192-CBC
 * aes256, aka AES-256-CBC
+* aes256-ctr with bcrypt_pbkdf (OpenSSH format)
 
 The cipher type is determined from the file.  You do not have to
 specify this.
