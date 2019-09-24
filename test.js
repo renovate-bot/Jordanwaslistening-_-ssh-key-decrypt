@@ -13,6 +13,13 @@ unenc = Buffer.from(fs.readFileSync(unenc, 'ascii')
   .slice(1, -1)
   .join(''), 'base64');
 
+let unencOpenSsh = path.resolve(__dirname, 'fixtures', 'id_rsa_open_unencrypted');
+unencOpenSsh = Buffer.from(fs.readFileSync(unencOpenSsh, 'ascii')
+  .trim()
+  .split('\n')
+  .slice(1, -1)
+  .join(''), 'base64');
+
 function tryThis(fn, f, msg) {
   tap.test(f, (t) => {
     t.plan(1);
@@ -20,46 +27,51 @@ function tryThis(fn, f, msg) {
   });
 }
 
-function test(f) {
+function test(fixture, unencryptedKey) {
   let file;
   let fileData;
 
   tryThis(() => {
-    file = path.resolve(__dirname, 'fixtures', `id_rsa_${f}`);
+    file = path.resolve(__dirname, 'fixtures', `id_rsa_${fixture}`);
     fileData = fs.readFileSync(file, 'ascii');
-  }, f, 'failed reading test key');
+  }, fixture, 'failed reading test key');
 
   let data;
   tryThis(() => {
     assert(data = decrypt(fileData, 'asdf'));
     assert(Buffer.isBuffer(data), 'should be buffer');
-  }, f, 'failed decryption');
+  }, fixture, 'failed decryption');
 
   let hex;
   tryThis(() => {
     assert(hex = decrypt(fileData, 'asdf', 'hex'));
     assert.equal(typeof hex, 'string');
     assert.equal(hex, data.toString('hex'));
-  }, f, 'failed hex decryption');
+  }, fixture, 'failed hex decryption');
 
   let base64;
   tryThis(() => {
     assert(base64 = decrypt(fileData, 'asdf', 'base64'));
     assert.equal(typeof base64, 'string');
     assert.equal(base64, data.toString('base64'));
-  }, f, 'failed base64 decryption');
+  }, fixture, 'failed base64 decryption');
 
-  tryThis(() => {
-    assert.equal(data.length, unenc.length);
-  }, f, 'length differs');
+  // OpenSSH encrypted keys aren't byte equivalent to unencrypted keys, can't directly compare
+  if (unencryptedKey === unenc) {
+    tryThis(() => {
+      assert.equal(data.length, unencryptedKey.length);
+    }, fixture, 'length differs');
 
-  tryThis(() => {
-    for (let i = 0; i < data.length; i++) {
-      assert.equal(data[i], unenc[i], `differs at position ${i}`);
-    }
-  }, f, 'byte check');
+    tryThis(() => {
+      for (let i = 0; i < data.length; i++) {
+        assert.equal(data[i], unencryptedKey[i], `differs at position ${i}`);
+      }
+    }, fixture, 'byte check');
+  }
 }
 
+test('open_aes256-ctr_bcrypt_asdf', unencOpenSsh);
+test('open_unencrypted', unencOpenSsh);
 
 let tests = [
   'aes128',
@@ -73,4 +85,4 @@ tests = tests.map((t) => `enc_${t}_asdf`);
 
 tests.push('unencrypted');
 
-tests.forEach(test);
+tests.forEach(test, unenc);

@@ -16,6 +16,7 @@
         "sourceType": "module"
     },
     "rules": {
+        "comma-dangle": "off",
         "no-param-reassign": "off",
         "no-plusplus": "off"
     }
