@@ -1,0 +1,32 @@
+on:
+  push:
+    branches:
+      - master
+  pull_request: 
+
+name: Run Tests
+
+jobs:
+
+  test:
+    name: Tests
+    strategy:
+        matrix:
+          node: [10, 12]
+          os: [windows-latest, ubuntu-latest, macOS-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Use Node.js ${{ matrix.node }}
+        uses: actions/setup-node@master
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Yarn lint and test
+        run: |
+          yarn
+          yarn lint
+          yarn test
+        env:
+          CI: true

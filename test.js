@@ -1,90 +1,88 @@
-var crypto = require('crypto');
-var assert = require('assert');
-var fs = require('fs');
-var path = require('path');
-var t = require('tap');
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const tap = require('tap');
 
-var decrypt = require('./index.js');
+const decrypt = require('./index.js');
 
 // All the fixtures should decrypt to this key
-var unenc = path.resolve(__dirname, 'fixtures', 'id_rsa_unencrypted');
-unenc = new Buffer(fs.readFileSync(unenc, 'ascii')
-    .trim()
-    .split('\n')
-    .slice(1, -1)
-    .join(''), 'base64');
+let unenc = path.resolve(__dirname, 'fixtures', 'id_rsa_unencrypted');
+unenc = Buffer.from(fs.readFileSync(unenc, 'ascii')
+  .trim()
+  .split('\n')
+  .slice(1, -1)
+  .join(''), 'base64');
 
-var tests =
-  [
+let unencOpenSsh = path.resolve(__dirname, 'fixtures', 'id_rsa_open_unencrypted');
+unencOpenSsh = Buffer.from(fs.readFileSync(unencOpenSsh, 'ascii')
+  .trim()
+  .split('\n')
+  .slice(1, -1)
+  .join(''), 'base64');
+
+function tryThis(fn, f, msg) {
+  tap.test(f, (t) => {
+    t.plan(1);
+    t.doesNotThrow(fn, msg);
+  });
+}
+
+function test(fixture, unencryptedKey) {
+  let file;
+  let fileData;
+
+  tryThis(() => {
+    file = path.resolve(__dirname, 'fixtures', `id_rsa_${fixture}`);
+    fileData = fs.readFileSync(file, 'ascii');
+  }, fixture, 'failed reading test key');
+
+  let data;
+  tryThis(() => {
+    assert(data = decrypt(fileData, 'asdf'));
+    assert(Buffer.isBuffer(data), 'should be buffer');
+  }, fixture, 'failed decryption');
+
+  let hex;
+  tryThis(() => {
+    assert(hex = decrypt(fileData, 'asdf', 'hex'));
+    assert.equal(typeof hex, 'string');
+    assert.equal(hex, data.toString('hex'));
+  }, fixture, 'failed hex decryption');
+
+  let base64;
+  tryThis(() => {
+    assert(base64 = decrypt(fileData, 'asdf', 'base64'));
+    assert.equal(typeof base64, 'string');
+    assert.equal(base64, data.toString('base64'));
+  }, fixture, 'failed base64 decryption');
+
+  // OpenSSH encrypted keys aren't byte equivalent to unencrypted keys, can't directly compare
+  if (unencryptedKey === unenc) {
+    tryThis(() => {
+      assert.equal(data.length, unencryptedKey.length);
+    }, fixture, 'length differs');
+
+    tryThis(() => {
+      for (let i = 0; i < data.length; i++) {
+        assert.equal(data[i], unencryptedKey[i], `differs at position ${i}`);
+      }
+    }, fixture, 'byte check');
+  }
+}
+
+test('open_aes256-ctr_bcrypt_asdf', unencOpenSsh);
+test('open_unencrypted', unencOpenSsh);
+
+let tests = [
   'aes128',
   'aes192',
   'aes256',
   'des3',
-  'des'
-  ];
+  'des',
+];
 
-tests = tests.map(function(t)
-  {
-  return 'enc_' + t + '_asdf';
-  });
+tests = tests.map((t) => `enc_${t}_asdf`);
 
 tests.push('unencrypted');
 
-tests.forEach(test);
-
-function test(f)
-  {
-  var file;
-  var fileData;
-
-  tryThis(function()
-    {
-    file = path.resolve(__dirname, 'fixtures', 'id_rsa_' + f)
-    fileData = fs.readFileSync(file, 'ascii');
-    }, f, 'failed reading test key');
-
-  var data;
-  tryThis(function()
-    {
-    assert(data = decrypt(fileData, 'asdf'));
-    assert(Buffer.isBuffer(data), 'should be buffer');
-    }, f, 'failed decryption');
-
-  var hex;
-  tryThis(function()
-    {
-    assert(hex = decrypt(fileData, 'asdf', 'hex'));
-    assert.equal(typeof hex, 'string');
-    assert.equal(hex, data.toString('hex'));
-    }, f, 'failed hex decryption');
-
-  var base64;
-  tryThis(function()
-    {
-    assert(base64 = decrypt(fileData, 'asdf', 'base64'));
-    assert.equal(typeof base64, 'string');
-    assert.equal(base64, data.toString('base64'));
-    }, f, 'failed base64 decryption');
-
-  tryThis(function()
-    {
-    assert.equal(data.length, unenc.length);
-    }, f, 'length differs');
-
-  tryThis(function()
-    {
-    for (var i = 0; i < data.length; i++)
-      {
-      assert.equal(data[i], unenc[i], 'differs at position ' + i);
-      }
-    }, f, 'byte check');
-  }
-
-function tryThis(fn, f, msg)
-  {
-  t.test(f, function (t)
-    {
-    t.plan(1)
-    t.doesNotThrow(fn, msg)
-    })
-  }
+tests.forEach(test, unenc);
