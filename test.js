@@ -70,8 +70,12 @@ function test(fixture, unencryptedKey) {
   }
 }
 
-test('open_aes256-ctr_bcrypt_asdf', unencOpenSsh);
-test('open_unencrypted', unencOpenSsh);
+const openTests = [
+  'aes256-ctr_bcrypt',
+  'aes256-cbc_bcrypt'
+].map((t) => `open_${t}_asdf`);
+openTests.push('open_unencrypted');
+openTests.forEach(test, unencOpenSsh);
 
 let tests = [
   'aes128',
