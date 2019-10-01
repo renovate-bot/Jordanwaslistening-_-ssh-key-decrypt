@@ -20,6 +20,8 @@ const keyBytes = {
   'AES-128-CBC': 16,
   'AES-192-CBC': 24,
   'AES-256-CBC': 32,
+  'AES-128-CTR': 16,
+  'AES-192-CTR': 24,
   'AES-256-CTR': 32,
 };
 
@@ -104,8 +106,9 @@ function decrypt(encData, type, passphrase, iv, outEnc) {
   return formatOut(data, outEnc);
 }
 
-const decryptOpenSsh = (encData, key, iv) => {
-  const dec = crypto.createDecipheriv('aes-256-ctr', key, iv);
+const decryptOpenSsh = (encData, key, iv, encryptionAlgorithm) => {
+  const dec = crypto.createDecipheriv(encryptionAlgorithm, key, iv);
+  dec.setAutoPadding(false);
   const result = [dec.update(encData), dec.final()];
   return Buffer.concat(result);
 };
@@ -138,10 +141,10 @@ const parsePubKey = (buffer) => {
   return { keyType, pub0, pub1 };
 };
 
-const parsePrivKey = (buffer, kdf, passphrase) => {
+const parsePrivKey = (buffer, kdf, passphrase, encryptionAlgorithm) => {
   if (kdf !== null) {
-    const keyLen = keyBytes['AES-256-CTR'];
-    const ivLen = 16;
+    const keyLen = keyBytes[encryptionAlgorithm.toUpperCase()];
+    const ivLen = 16; // aes iv is always 128 bits
     const keyIv = Buffer.alloc(keyLen + ivLen);
     const passBytes = Buffer.from(passphrase);
     const pbkdfResult = bcryptPbkdf.pbkdf(
@@ -152,7 +155,7 @@ const parsePrivKey = (buffer, kdf, passphrase) => {
     }
     const key = keyIv.subarray(0, keyLen);
     const iv = keyIv.subarray(keyLen, keyLen + ivLen);
-    buffer = decryptOpenSsh(buffer, key, iv);
+    buffer = decryptOpenSsh(buffer, key, iv, encryptionAlgorithm);
   }
   const offset = [0];
   const checkSum = [
@@ -227,10 +230,14 @@ const parseOpenSshKey = (buffer, passphrase) => {
   ) === 0;
   assert.ok(hasOpenSshMagicHeader);
   const offset = [openSshMagicHeaderBuffer.length];
-  const enc = bufferReadCString(buffer, offset).toString('ascii');
-  assert.ok(enc === 'none' || enc === 'aes256-ctr');
-  const hash = bufferReadCString(buffer, offset).toString('ascii');
-  assert.ok(hash === 'none' || hash === 'bcrypt');
+  let ciphername = bufferReadCString(buffer, offset).toString('ascii');
+  if (ciphername !== 'none') {
+    assert.ok(ciphername.startsWith('aes') && ['1', '2'].includes(ciphername[3]));
+    ciphername = `${ciphername.slice(0, 3)}-${ciphername.slice(3)}`;
+    assert.ok(ciphername.toUpperCase() in keyBytes);
+  }
+  const kdfname = bufferReadCString(buffer, offset).toString('ascii');
+  assert.ok(kdfname === 'none' || kdfname === 'bcrypt');
   const kdfBytes = bufferReadCString(buffer, offset);
   const kdf = parseKdf(kdfBytes);
   const numKeys = bufferReadInt32(buffer, offset);
@@ -238,7 +245,7 @@ const parseOpenSshKey = (buffer, passphrase) => {
   const pubKeyBytes = bufferReadCString(buffer, offset);
   const pubKey = parsePubKey(pubKeyBytes);
   const privKeyBytes = bufferReadCString(buffer, offset);
-  const privKey = parsePrivKey(privKeyBytes, kdf, passphrase);
+  const privKey = parsePrivKey(privKeyBytes, kdf, passphrase, ciphername);
   assert.equal(buffer.length, offset[0]);
   assert.equal(privKeyBytes.length, privKey.raw.length);
   for (let i = 0; i < privKeyBytes.length; ++i) {
