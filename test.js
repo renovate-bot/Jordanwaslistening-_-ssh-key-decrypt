@@ -32,7 +32,7 @@ function test(fixture, unencryptedKey) {
   let fileData;
 
   tryThis(() => {
-    file = path.resolve(__dirname, 'fixtures', `id_rsa_${fixture}`);
+    file = path.resolve(__dirname, 'fixtures', fixture);
     fileData = fs.readFileSync(file, 'ascii');
   }, fixture, 'failed reading test key');
 
@@ -71,10 +71,11 @@ function test(fixture, unencryptedKey) {
 }
 
 const openTests = [
-  'aes256-ctr_bcrypt',
-  'aes256-cbc_bcrypt'
-].map((t) => `open_${t}_asdf`);
-openTests.push('open_unencrypted');
+  'id_rsa_open_aes256-ctr_bcrypt',
+  'id_ed25519_open_aes256-ctr_bcrypt',
+  'id_rsa_open_aes256-cbc_bcrypt'
+].map((t) => `${t}_asdf`);
+openTests.push('id_rsa_open_unencrypted');
 openTests.forEach(test, unencOpenSsh);
 
 let tests = [
@@ -85,8 +86,8 @@ let tests = [
   'des',
 ];
 
-tests = tests.map((t) => `enc_${t}_asdf`);
+tests = tests.map((t) => `id_rsa_enc_${t}_asdf`);
 
-tests.push('unencrypted');
+tests.push('id_rsa_unencrypted');
 
 tests.forEach(test, unenc);

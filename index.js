@@ -136,6 +136,9 @@ const bufferReadUInt32 = (buffer, offset) => {
 const parsePubKey = (buffer) => {
   const offset = [0];
   const keyType = bufferReadCString(buffer, offset).toString('ascii');
+  if (keyType !== 'ssh-rsa') {
+    return { keyType }; // parsing not supported unless ssh-rsa for now
+  }
   const pub0 = bufferReadCString(buffer, offset).toString('ascii');
   const pub1 = bufferReadCString(buffer, offset).toString('base64');
   return { keyType, pub0, pub1 };
@@ -167,6 +170,9 @@ const parsePrivKey = (buffer, kdf, passphrase, encryptionAlgorithm) => {
     throw new Error('Private key checksum mismatch (wrong passphrase?)');
   }
   const keyType = bufferReadCString(buffer, offset).toString('ascii');
+  if (keyType !== 'ssh-rsa') {
+    return { parsed: { keyType }, raw: buffer }; // parsing not supported unless ssh-rsa for now
+  }
   const pub0 = bufferReadCString(buffer, offset).toString('ascii');
   const pub1 = bufferReadCString(buffer, offset).toString('base64');
   const prv0 = bufferReadCString(buffer, offset).toString('ascii');
