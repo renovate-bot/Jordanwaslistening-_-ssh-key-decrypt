@@ -1,7 +1,30 @@
-const assert = require('assert');
+const nodeAssert = require('assert');
 const bcryptPbkdf = require('bcrypt-pbkdf');
 const crypto = require('crypto');
 const util = require('util');
+
+// Workaround https://github.com/electron/electron/issues/24577
+const assert = {
+  equal: (actual, expected) => {
+    // eslint-disable-next-line eqeqeq
+    if (actual != expected) {
+      throw new nodeAssert.AssertionError({
+        actual,
+        expected,
+        operator: '=='
+      });
+    }
+  },
+  ok: (value) => {
+    if (!value) {
+      throw new nodeAssert.AssertionError({
+        actual: value,
+        expected: true,
+        operator: '=='
+      });
+    }
+  }
+};
 
 let debug;
 if (util.debuglog) debug = util.debuglog('ssh-key-decrypt');
