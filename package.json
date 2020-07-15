@@ -1,6 +1,6 @@
 {
   "name": "@ianhattendorf/ssh-key-decrypt",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Decrypt encrypted ssh private keys",
   "main": "index.js",
   "scripts": {
