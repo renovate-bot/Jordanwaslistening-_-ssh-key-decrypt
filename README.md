@@ -1,4 +1,4 @@
-# ssh-key-decrypt
+cat ~/.ssh/id_ed25519.pub | xclip -selection clipboard # ssh-key-decrypt
 
 Decrypt encrypted ssh private keys
 
